@@ -18,7 +18,7 @@ matchRouter.get("/", async (request, response) => {
   if (!parsed.success) {
     return response.status(400).json({
       error: "Invalid query",
-      details: JSON.stringify(parsed.error),
+      details: parsed.error.issues,
     });
   }
 
@@ -41,25 +41,28 @@ matchRouter.get("/", async (request, response) => {
 
 matchRouter.post("/", async (request, response) => {
   const parsed = createMatchSchema.safeParse(request.body);
-  const { data } = createMatchSchema.safeParse(request.body);
 
   if (!parsed.success) {
     return response.status(400).json({
       error: "Invalid payload",
-      details: JSON.stringify(parsed.error),
+      details: parsed.error.issues,
     });
   }
+
+  const {
+    data: { startTime, endTime, homeTeam, awayScore },
+  } = parsed;
 
   try {
     const [event] = await db
       .insert(matches)
       .values({
-        ...data,
-        startTime: new Date(data.startTime),
-        endTime: new Date(data.endTime),
-        homeScore: data.homeScore ?? 0,
-        awayScore: data.awayScore ?? 0,
-        status: getMatchStatus(data.startTime, data.endTime),
+        ...parsed.data,
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        homeScore: homeScore ?? 0,
+        awayScore: awayScore ?? 0,
+        status: getMatchStatus(startTime, endTime),
       })
       .returning();
 
@@ -67,7 +70,6 @@ matchRouter.post("/", async (request, response) => {
   } catch (error) {
     response.status(500).json({
       error: "Failed to create match",
-      details: JSON.stringify(error),
     });
   }
 });
