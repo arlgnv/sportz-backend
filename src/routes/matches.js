@@ -50,7 +50,7 @@ matchRouter.post("/", async (request, response) => {
   }
 
   const {
-    data: { startTime, endTime, homeTeam, awayScore },
+    data: { startTime, endTime, homeScore, awayScore },
   } = parsed;
 
   try {
