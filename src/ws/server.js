@@ -26,10 +26,30 @@ export function attachWebsocketServer(server) {
   });
 
   wss.on("connection", (socket) => {
+    socket.isAlive = true;
+    socket.on("pong", () => {
+      socket.isAlive = true;
+    });
+
     sendJson(socket, { type: "welcome" });
 
     socket.on("error", console.error);
   });
+
+  const interval = setInterval(() => {
+    wss.clients.forEach((client) => {
+      if (client.isAlive === false) {
+        client.terminate();
+
+        return;
+      }
+
+      client.isAlive = false;
+      client.ping();
+    });
+  }, 30_000);
+
+  wss.on("close", () => clearInterval(interval));
 
   function broadcastMatchCreated(match) {
     broadcast(wss, { type: "match_created", data: match });
