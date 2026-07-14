@@ -26,7 +26,7 @@ function unsubscribe(matchId, socket) {
 }
 
 function cleanupSubscriptions(socket) {
-  for (const matchId of socket.subscribers) {
+  for (const matchId of socket.subscriptions) {
     unsubscribe(matchId, socket);
   }
 }
