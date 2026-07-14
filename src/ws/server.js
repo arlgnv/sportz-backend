@@ -171,7 +171,7 @@ export function attachWebsocketServer(server) {
   }
 
   function broadcastCommentary(matchId, comment) {
-    broadcastToMatch(wss, { type: "commentary", data: comment });
+    broadcastToMatch(matchId, { type: "commentary", data: comment });
   }
 
   return { broadcastMatchCreated, broadcastCommentary };
