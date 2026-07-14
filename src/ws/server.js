@@ -26,7 +26,7 @@ function unsubscribe(matchId, socket) {
 }
 
 function cleanupSubscriptions(socket) {
-  for (const matchId of socket.subscribers) {
+  for (const matchId of socket.subscriptions) {
     unsubscribe(matchId, socket);
   }
 }
@@ -68,6 +68,7 @@ function handleMessage(socket, data) {
     message = JSON.parse(data.toString());
   } catch (error) {
     sendJson(socket, { type: "error", message: "Invalid JSON" });
+    return;
   }
 
   if (message.type === "subscribe" && Number.isInteger(message.matchId)) {
@@ -170,7 +171,7 @@ export function attachWebsocketServer(server) {
   }
 
   function broadcastCommentary(matchId, comment) {
-    broadcastToMatch(wss, { type: "commentary", data: comment });
+    broadcastToMatch(matchId, { type: "commentary", data: comment });
   }
 
   return { broadcastMatchCreated, broadcastCommentary };
