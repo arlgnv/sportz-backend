@@ -1,8 +1,6 @@
 {
-  "name": "sportz",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "sportz-backend",
+  "private": true,
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
@@ -10,9 +8,6 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "type": "module",
   "dependencies": {
     "@arcjet/inspect": "1.8.0",
