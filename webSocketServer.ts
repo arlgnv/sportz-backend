@@ -72,7 +72,7 @@ const webSocketServer = new WebSocketServer<CustomWebSocketConstructor>({
   maxPayload: 1024 * 1024,
 });
 
-webSocketServer.on("connection", async (ws) => {
+webSocketServer.on("connection", (ws) => {
   ws.alive = true;
 
   ws.on("pong", () => {
