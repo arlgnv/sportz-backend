@@ -1,65 +1,8 @@
 import { WebSocket, WebSocketServer } from "ws";
 import * as z from "zod";
+import dataManager from "./DataManager.ts";
 
-function subscribe(matchId, socket) {
-  if (!matchSubscribers.has(matchId)) {
-    matchSubscribers.set(matchId, new Set());
-  }
-
-  matchSubscribers.get(matchId).add(socket);
-}
-
-function unsubscribe(matchId, socket) {
-  const subscribers = matchSubscribers.get(matchId);
-
-  if (!subscribers) {
-    return;
-  }
-
-  subscribers.delete(socket);
-
-  if (subscribers.size === 0) {
-    matchSubscribers.delete(matchId);
-  }
-}
-
-function cleanupSubscriptions(socket) {
-  for (const matchId of socket.subscriptions) {
-    unsubscribe(matchId, socket);
-  }
-}
-
-function sendJson(socket, payload) {
-  if (socket.readyState !== WebSocket.OPEN) {
-    return;
-  }
-
-  socket.send(JSON.stringify(payload));
-}
-
-function broadcastToAll(wss, payload) {
-  wss.clients.forEach((client) => {
-    if (client.readyState !== WebSocket.OPEN) {
-      return;
-    }
-
-    client.send(JSON.stringify(payload));
-  });
-}
-
-function broadcastToMatch(matchId, payload) {
-  const subscribers = matchSubscribers.get(matchId);
-
-  if (!subscribers || subscribers.size === 0) {
-    return;
-  }
-
-  subscribers.forEach((subscriber) => {
-    sendJson(subscriber, payload);
-  });
-}
-
-interface CustomWebSocket extends WebSocket {
+export interface CustomWebSocket extends WebSocket {
   alive: boolean;
 }
 
@@ -118,7 +61,11 @@ webSocketServer.on("connection", (ws) => {
 
     switch (message.type) {
       case "subscribe_to_match_commentary": {
-        if (Number.isInteger(message.matchId)) {
+        if (
+          typeof message.matchId === "number" &&
+          Number.isInteger(message.matchId)
+        ) {
+          dataManager.subscribeToMatchCommentary(message.matchId, ws);
           ws.send(
             JSON.stringify({
               success: true,
@@ -129,7 +76,11 @@ webSocketServer.on("connection", (ws) => {
         return;
       }
       case "unsubscribe_from_match_commentary": {
-        if (Number.isInteger(message.matchId)) {
+        if (
+          typeof message.matchId === "number" &&
+          Number.isInteger(message.matchId)
+        ) {
+          dataManager.unsubscribeFromMatchCommentary(message.matchId, ws);
           ws.send(
             JSON.stringify({
               success: true,

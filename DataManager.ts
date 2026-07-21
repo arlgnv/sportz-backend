@@ -1,13 +1,15 @@
+import type { CustomWebSocket } from "./webSocketServer.ts";
+
 class DataManager {
   private matches = [];
   private matchIdToCommentary: Record<number, any[] | undefined> = {};
-  private matchIdToObservers: Record<number, any[] | undefined> = {};
+  private matchIdToSubscribers: Map<number, Set<CustomWebSocket>> = new Map();
 
   constructor() {
-    this.startEventsEmitting();
+    this.startActivity();
   }
 
-  private startEventsEmitting() {
+  private startActivity() {
     setInterval(() => {
       // todo: replace this with actual match creation logic
       console.log("Match added");
@@ -24,8 +26,34 @@ class DataManager {
     return commentary.slice(0, limit);
   }
 
-  public getMatchObservers(matchId: number) {
-    return this.matchIdToObservers[matchId] ?? [];
+  public subscribeToMatchCommentary(matchId: number, ws: CustomWebSocket) {
+    const subscribers = this.matchIdToSubscribers.get(matchId);
+
+    if (!subscribers) {
+      this.matchIdToSubscribers.set(matchId, new Set([ws]));
+
+      return;
+    }
+
+    subscribers.add(ws);
+  }
+
+  public unsubscribeFromMatchCommentary(matchId: number, ws: CustomWebSocket) {
+    const subscribers = this.matchIdToSubscribers.get(matchId);
+
+    if (!subscribers) {
+      return;
+    }
+
+    subscribers.delete(ws);
+
+    if (subscribers.size === 0) {
+      this.matchIdToSubscribers.delete(matchId);
+    }
+  }
+
+  public getMatchSubscribers(matchId: number) {
+    return this.matchIdToSubscribers.get(matchId);
   }
 }
 
