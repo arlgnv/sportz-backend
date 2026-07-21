@@ -1,4 +1,5 @@
 import { WebSocket, WebSocketServer } from "ws";
+import * as z from "zod";
 
 function subscribe(matchId, socket) {
   if (!matchSubscribers.has(matchId)) {
@@ -66,6 +67,15 @@ type CustomWebSocketConstructor = typeof WebSocket & {
   new (): CustomWebSocket;
 };
 
+const dataSchema = z
+  .object({
+    type: z.union([
+      z.literal("subscribe_to_match_commentary"),
+      z.literal("unsubscribe_from_match_commentary"),
+    ]),
+  })
+  .catchall(z.unknown());
+
 const webSocketServer = new WebSocketServer<CustomWebSocketConstructor>({
   noServer: true,
   path: "/ws",
@@ -79,28 +89,56 @@ webSocketServer.on("connection", (ws) => {
     ws.alive = true;
   });
 
-  ws.on("message", (data) => {
-    let message;
+  ws.on("message", (rawData) => {
+    console.log(rawData);
+
+    let data: unknown;
 
     try {
-      message = JSON.parse(data.toString());
+      data = JSON.parse(rawData.toString());
     } catch (error) {
-      sendJson(ws, { type: "error", message: "Invalid JSON" });
-      return;
-    }
-
-    if (message.type === "subscribe" && Number.isInteger(message.matchId)) {
-      subscribe(message.matchId, ws);
-      ws.subscriptions.add(message.matchId);
-      sendJson(ws, { type: "subscribed", matchId: message.matchId });
+      ws.send(JSON.stringify({ success: false, error }));
 
       return;
     }
 
-    if (message.type === "unsubscribe" && Number.isInteger(message.matchId)) {
-      unsubscribe(message.matchId, ws);
-      ws.subscriptions.delete(message.matchId);
-      sendJson(ws, { type: "unsubscribed", matchId: message.matchId });
+    const parseDataResult = dataSchema.safeParse(data);
+
+    console.log(parseDataResult);
+
+    if (!parseDataResult.success) {
+      ws.send(
+        JSON.stringify({ success: false, error: parseDataResult.error.issues }),
+      );
+
+      return;
+    }
+
+    const message = parseDataResult.data;
+
+    switch (message.type) {
+      case "subscribe_to_match_commentary": {
+        if (Number.isInteger(message.matchId)) {
+          ws.send(
+            JSON.stringify({
+              success: true,
+            }),
+          );
+        }
+
+        return;
+      }
+      case "unsubscribe_from_match_commentary": {
+        if (Number.isInteger(message.matchId)) {
+          ws.send(
+            JSON.stringify({
+              success: true,
+            }),
+          );
+        }
+
+        return;
+      }
     }
   });
 

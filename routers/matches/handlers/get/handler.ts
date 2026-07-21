@@ -5,20 +5,20 @@ import { MAX_LIMIT } from "./constants.ts";
 import dataManager from "../../../../DataManager.ts";
 
 async function handler(req: Request, res: Response) {
-  const parsedQuery = querySchema.safeParse(req.query);
+  const parseQueryResult = querySchema.safeParse(req.query);
 
-  if (!parsedQuery.success) {
+  if (!parseQueryResult.success) {
     res.status(400).json({
       success: false,
-      error: parsedQuery.error.issues,
+      error: parseQueryResult.error.issues,
     });
 
     return;
   }
 
   const limit =
-    parsedQuery.data.limit !== undefined
-      ? Math.min(parsedQuery.data.limit, MAX_LIMIT)
+    parseQueryResult.data.limit !== undefined
+      ? Math.min(parseQueryResult.data.limit, MAX_LIMIT)
       : MAX_LIMIT;
   const matches = dataManager.getMatches(limit);
 
