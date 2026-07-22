@@ -2,7 +2,7 @@
   "name": "sportz-backend",
   "private": true,
   "scripts": {
-    "dev": "node --watch index.ts"
+    "dev": "node --env-file-if-exists=.env --watch index.ts"
   },
   "type": "module",
   "dependencies": {
