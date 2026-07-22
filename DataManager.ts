@@ -22,15 +22,23 @@ interface Match {
 const MATCH_SPORTS: MatchSports[] = ["football", "basketball", "tennis"];
 const MATCH_STATUSES: MatchStatus[] = ["scheduled", "live", "finished"];
 
-interface Commentary {
+interface Comment {
   id: number;
   matchId: number;
   text: string;
 }
 
+const comments = [
+  "Great attack!",
+  "Shot on target!",
+  "Amazing save!",
+  "Corner kick.",
+  "Dangerous moment!",
+];
+
 class DataManager {
   private matches: Match[] = [];
-  private matchIdToCommentary: Map<number, Commentary[]> = new Map();
+  private comments: Comment[] = [];
   private matchIdToSubscribers: Map<number, Set<CustomWebSocket>> = new Map();
 
   constructor() {
@@ -56,12 +64,12 @@ class DataManager {
 
       this.matches.push(createdMatch);
 
-      webSocketServer.clients.forEach((client) => {
-        if (client.readyState !== WebSocket.OPEN) {
+      webSocketServer.clients.forEach((ws) => {
+        if (ws.readyState !== WebSocket.OPEN) {
           return;
         }
 
-        client.send(
+        ws.send(
           JSON.stringify({
             type: "match_created",
             data: createdMatch,
@@ -69,6 +77,42 @@ class DataManager {
         );
       });
     }, 60_000);
+
+    // Create comment every 5 seconds
+    setInterval(() => {
+      const liveMatches = this.matches.filter(
+        ({ status }) => status === "live",
+      );
+
+      liveMatches.forEach((match) => {
+        const createdComment: Comment = {
+          id: this.comments.length === 0 ? 1 : this.comments.at(-1)!.id + 1,
+          matchId: match.id,
+          text: getRandomArrayElement(comments),
+        };
+
+        this.comments.push(createdComment);
+
+        const subscribers = this.matchIdToSubscribers.get(match.id);
+
+        if (!subscribers) {
+          return;
+        }
+
+        subscribers.forEach((ws) => {
+          if (ws.readyState !== WebSocket.OPEN) {
+            return;
+          }
+
+          ws.send(
+            JSON.stringify({
+              type: "comment_created",
+              data: createdComment,
+            }),
+          );
+        });
+      });
+    }, 5_000);
   }
 
   public getMatches(limit: number) {
@@ -76,13 +120,11 @@ class DataManager {
   }
 
   public getMatchCommentary(matchId: number, limit: number) {
-    const commentary = this.matchIdToCommentary.get(matchId);
+    const commentary = this.comments.filter(
+      (comment) => comment.matchId === matchId,
+    );
 
-    if (!commentary) {
-      return;
-    }
-
-    return commentary.slice(0, limit);
+    return commentary.toReversed().slice(0, limit);
   }
 
   public subscribeToMatchCommentary(matchId: number, ws: CustomWebSocket) {
