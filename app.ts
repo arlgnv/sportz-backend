@@ -4,7 +4,6 @@ import { httpAj } from "./arcjet.ts";
 
 const app = express();
 
-app.use(express.json());
 app.use(async (req, res, next) => {
   if (!httpAj) {
     next();
@@ -28,6 +27,7 @@ app.use(async (req, res, next) => {
 
   next();
 });
+app.use(express.json());
 app.use("/matches", matchesRouter);
 
 export default app;
