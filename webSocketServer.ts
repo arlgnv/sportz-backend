@@ -33,21 +33,19 @@ webSocketServer.on("connection", (ws) => {
   });
 
   ws.on("message", (rawData) => {
-    console.log(rawData);
-
     let data: unknown;
 
     try {
       data = JSON.parse(rawData.toString());
     } catch (error) {
+      console.error(error);
+
       ws.send(JSON.stringify({ success: false, error }));
 
       return;
     }
 
     const parseDataResult = dataSchema.safeParse(data);
-
-    console.log(parseDataResult);
 
     if (!parseDataResult.success) {
       ws.send(

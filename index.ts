@@ -34,4 +34,12 @@ server.on("upgrade", async (req, socket, head) => {
   });
 });
 
-server.listen(8000);
+server.listen(
+  {
+    port: 8000,
+  },
+  () => {
+    console.log("Server is running on http://localhost:8000");
+    console.log(`WebSocket server is running on ws://localhost:8000/ws`);
+  },
+);
