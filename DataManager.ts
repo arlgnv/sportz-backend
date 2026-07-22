@@ -1,8 +1,36 @@
+import getRandomArrayElement from "./utils/getRandomArrayElement.ts";
 import type { CustomWebSocket } from "./webSocketServer.ts";
+import webSocketServer from "./webSocketServer.ts";
+
+type MatchSports = "football" | "basketball" | "tennis";
+type MatchStatus = "scheduled" | "live" | "finished";
+
+interface Match {
+  id: number;
+  sports: MatchSports;
+  status: MatchStatus;
+  teamA: {
+    name: string;
+    score: number;
+  };
+  teamB: {
+    name: string;
+    score: number;
+  };
+}
+
+const MATCH_SPORTS: MatchSports[] = ["football", "basketball", "tennis"];
+const MATCH_STATUSES: MatchStatus[] = ["scheduled", "live", "finished"];
+
+interface Commentary {
+  id: number;
+  matchId: number;
+  text: string;
+}
 
 class DataManager {
-  private matches = [];
-  private matchIdToCommentary: Record<number, any[] | undefined> = {};
+  private matches: Match[] = [];
+  private matchIdToCommentary: Map<number, Commentary[]> = new Map();
   private matchIdToSubscribers: Map<number, Set<CustomWebSocket>> = new Map();
 
   constructor() {
@@ -10,10 +38,37 @@ class DataManager {
   }
 
   private startActivity() {
+    // Create a new match every minute
     setInterval(() => {
-      // todo: replace this with actual match creation logic
-      console.log("Match added");
-    }, 20_000);
+      const createdMatch: Match = {
+        id: this.matches.length === 0 ? 1 : this.matches.at(-1)!.id + 1,
+        sports: getRandomArrayElement(MATCH_SPORTS),
+        status: getRandomArrayElement(MATCH_STATUSES),
+        teamA: {
+          name: "Artem's team",
+          score: 0,
+        },
+        teamB: {
+          name: "Claude's team",
+          score: 0,
+        },
+      };
+
+      this.matches.push(createdMatch);
+
+      webSocketServer.clients.forEach((client) => {
+        if (client.readyState !== WebSocket.OPEN) {
+          return;
+        }
+
+        client.send(
+          JSON.stringify({
+            type: "match_created",
+            data: createdMatch,
+          }),
+        );
+      });
+    }, 60_000);
   }
 
   public getMatches(limit: number) {
@@ -21,7 +76,11 @@ class DataManager {
   }
 
   public getMatchCommentary(matchId: number, limit: number) {
-    const commentary = this.matchIdToCommentary[matchId] ?? [];
+    const commentary = this.matchIdToCommentary.get(matchId);
+
+    if (!commentary) {
+      return;
+    }
 
     return commentary.slice(0, limit);
   }
