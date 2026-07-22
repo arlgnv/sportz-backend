@@ -53,11 +53,11 @@ class DataManager {
         sports: getRandomArrayElement(MATCH_SPORTS),
         status: getRandomArrayElement(MATCH_STATUSES),
         teamA: {
-          name: "Artem's team",
+          name: "Gotham elite",
           score: 0,
         },
         teamB: {
-          name: "Claude's team",
+          name: "Joker's gang",
           score: 0,
         },
       };
