@@ -10,14 +10,16 @@ type CustomWebSocketConstructor = typeof WebSocket & {
   new (): CustomWebSocket;
 };
 
-const dataSchema = z
-  .object({
-    type: z.union([
-      z.literal("subscribe_to_match_commentary"),
-      z.literal("unsubscribe_from_match_commentary"),
-    ]),
-  })
-  .catchall(z.unknown());
+const dataSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("subscribe_to_match_commentary"),
+    matchId: z.int().min(0),
+  }),
+  z.object({
+    type: z.literal("unsubscribe_from_match_commentary"),
+    matchId: z.int().min(0),
+  }),
+]);
 
 const webSocketServer = new WebSocketServer<CustomWebSocketConstructor>({
   noServer: true,
@@ -59,32 +61,22 @@ webSocketServer.on("connection", (ws) => {
 
     switch (message.type) {
       case "subscribe_to_match_commentary": {
-        if (
-          typeof message.matchId === "number" &&
-          Number.isInteger(message.matchId)
-        ) {
-          dataManager.subscribeToMatchCommentary(message.matchId, ws);
-          ws.send(
-            JSON.stringify({
-              success: true,
-            }),
-          );
-        }
+        dataManager.subscribeToMatchCommentary(message.matchId, ws);
+        ws.send(
+          JSON.stringify({
+            success: true,
+          }),
+        );
 
         return;
       }
       case "unsubscribe_from_match_commentary": {
-        if (
-          typeof message.matchId === "number" &&
-          Number.isInteger(message.matchId)
-        ) {
-          dataManager.unsubscribeFromMatchCommentary(message.matchId, ws);
-          ws.send(
-            JSON.stringify({
-              success: true,
-            }),
-          );
-        }
+        dataManager.unsubscribeFromMatchCommentary(message.matchId, ws);
+        ws.send(
+          JSON.stringify({
+            success: true,
+          }),
+        );
 
         return;
       }
